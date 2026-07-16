@@ -39,6 +39,18 @@ npm run start:dev
 
 API en `http://localhost:3000`. Probar `GET /health` → `{ "status": "ok" }`.
 
+Endpoints de `/tareas`:
+
+| Método | Ruta          | Body                              |
+|--------|---------------|------------------------------------|
+| GET    | `/tareas`     | —                                  |
+| GET    | `/tareas/:id` | —                                  |
+| POST   | `/tareas`     | `{ titulo, descripcion?, estado? }` |
+| PATCH  | `/tareas/:id` | cualquier subconjunto del anterior  |
+| DELETE | `/tareas/:id` | —                                  |
+
+`estado` es `"PENDIENTE"` o `"HECHA"`.
+
 ### 3. Frontend
 
 ```bash
