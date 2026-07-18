@@ -10,6 +10,62 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Servicio "de un solo uso": corre `prisma migrate deploy` y termina.
+  # Usa la etapa `build` del Dockerfile del backend (la que tiene devDependencies,
+  # incluido el CLI de prisma) en vez de la imagen final de producción.
+  migrate:
+    build:
+      context: ./backend
+      target: build
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mi_proyecto?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Dentro de la red de Docker Compose, "postgres" es el hostname del
+      # servicio de arriba (DNS interno), no "localhost".
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mi_proyecto?schema=public
+      # El navegador sí ve el frontend en localhost:8080 (puerto mapeado al host),
+      # por eso el origen de CORS sigue siendo localhost y no el nombre del servicio.
+      # Nota: usamos 8080 (no 5173) a propósito para no chocar con el puerto
+      # que usa `npm run dev` en modo nativo — son dos formas distintas de correr
+      # el frontend y conviene que tengan puertos distintos y reconocibles.
+      FRONTEND_URL: http://localhost:8080
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Vite incrusta esto en el JS al compilar; el navegador corre fuera
+        # de la red de Docker, así que apunta al puerto publicado en el host.
+        VITE_API_URL: http://localhost:3000
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
