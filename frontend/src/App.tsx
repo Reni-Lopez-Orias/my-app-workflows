@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import './App.css';
 import {
   actualizarTarea,
   crearTarea,
   eliminarTarea,
   listarTareas,
-} from './api';
+  type Tarea,
+} from './api.ts';
 
 function App() {
-  const [tareas, setTareas] = useState([]);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [error, setError] = useState('');
@@ -19,17 +20,18 @@ function App() {
       setTareas(await listarTareas());
       setError('');
     } catch (err) {
-      setError('No se pudo conectar con la API (' + err.message + ')');
+      setError('No se pudo conectar con la API (' + (err as Error).message + ')');
     } finally {
       setCargando(false);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch inicial en el mount, sin dependencias que cambien
     cargarTareas();
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!titulo.trim()) return;
     try {
@@ -38,27 +40,27 @@ function App() {
       setDescripcion('');
       cargarTareas();
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   };
 
-  const toggleEstado = async (tarea) => {
+  const toggleEstado = async (tarea: Tarea) => {
     try {
       await actualizarTarea(tarea.id, {
         estado: tarea.estado === 'PENDIENTE' ? 'HECHA' : 'PENDIENTE',
       });
       cargarTareas();
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   };
 
-  const handleEliminar = async (id) => {
+  const handleEliminar = async (id: number) => {
     try {
       await eliminarTarea(id);
       cargarTareas();
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   };
 
