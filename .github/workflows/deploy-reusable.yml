@@ -1,0 +1,64 @@
+name: Reusable - Build & Push por ambiente
+
+# "workflow_call" es lo que hace que este archivo sea "reusable": no se dispara
+# solo, solo lo puede invocar OTRO workflow (los deploy-dev/qa/prod.yml) pasandole
+# estos inputs. Es la logica de build+push escrita UNA sola vez.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Nombre del Environment de GitHub (dev, qa, prod)'
+        required: true
+        type: string
+      image-tag:
+        description: 'Tag corto para las imagenes de este ambiente (dev, qa, prod)'
+        required: true
+        type: string
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    # Este "environment:" es lo que conecta el job con las variables/secrets y las
+    # reglas de proteccion que configures en Settings -> Environments para cada
+    # ambiente (por ej. VITE_API_URL, o pedir aprobacion manual antes de "prod").
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login a GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push API
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/api:${{ inputs.image-tag }}
+            ghcr.io/${{ github.repository }}/api:${{ inputs.image-tag }}-${{ github.sha }}
+
+      - name: Build & push Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          # VITE_API_URL viene del Environment (inputs.environment), no esta
+          # hardcodeado aca -- mismo principio que ConfigService en el backend:
+          # el pipeline no sabe ni le importa cual es el valor real de cada ambiente.
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+          tags: |
+            ghcr.io/${{ github.repository }}/web:${{ inputs.image-tag }}
+            ghcr.io/${{ github.repository }}/web:${{ inputs.image-tag }}-${{ github.sha }}
+
+      # TODO: cuando el servidor (VM de Oracle) este listo, agregar aca un step
+      # que se conecte por SSH y corra `docker compose pull && docker compose up -d`
+      # para que ese ambiente pase a correr las imagenes que se acaban de publicar.

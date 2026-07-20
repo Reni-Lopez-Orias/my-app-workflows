@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, qa, main]
+  pull_request:
+    branches: [dev, qa, main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest        # el tipo de máquina virtual que GitHub te presta
+    defaults:
+      run:
+        working-directory: backend    # todos los "run:" de este job parten desde /backend
+    steps:
+      - uses: actions/checkout@v4                 # 1. traer tu código al runner
+      - uses: actions/setup-node@v4                # 2. instalar Node en el runner
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci                                # 3. instalar exactamente lo del lockfile
+      - name: Generar cliente de Prisma
+        run: npx prisma generate                   # 4. Prisma necesita esto antes de compilar
+      - name: Compilar
+        run: npm run build                         # 5. compilar TypeScript
+      - name: Ejecutar tests
+        run: npm test                              # 6. correr Jest (unitarios)
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend    # todos los "run:" de este job parten desde /frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run build
+      - name: Guardar artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist

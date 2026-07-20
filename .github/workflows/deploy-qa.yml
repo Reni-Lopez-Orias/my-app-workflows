@@ -1,0 +1,13 @@
+name: Deploy - QA
+
+on:
+  push:
+    branches: [qa]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-reusable.yml
+    with:
+      environment: qa
+      image-tag: qa
+    secrets: inherit

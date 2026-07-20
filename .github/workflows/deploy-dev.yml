@@ -1,0 +1,13 @@
+name: Deploy - Dev
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-reusable.yml
+    with:
+      environment: dev
+      image-tag: dev
+    secrets: inherit
