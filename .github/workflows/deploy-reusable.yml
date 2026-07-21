@@ -29,24 +29,31 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Docker exige que el nombre del repositorio en el tag sea todo en
+      # minusculas, y GitHub Actions no tiene una funcion "toLower()" para
+      # expresiones -- por eso lo calculamos con el propio shell (bash) y lo
+      # guardamos como variable de entorno para el resto de los steps.
+      - name: Nombre del repo en minusculas (Docker lo exige)
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
       - name: Login a GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push API
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/api:${{ inputs.image-tag }}
-            ghcr.io/${{ github.repository }}/api:${{ inputs.image-tag }}-${{ github.sha }}
+            ghcr.io/${{ env.REPO }}/api:${{ inputs.image-tag }}
+            ghcr.io/${{ env.REPO }}/api:${{ inputs.image-tag }}-${{ github.sha }}
 
       - name: Build & push Frontend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           push: true
@@ -56,8 +63,8 @@ jobs:
           build-args: |
             VITE_API_URL=${{ vars.VITE_API_URL }}
           tags: |
-            ghcr.io/${{ github.repository }}/web:${{ inputs.image-tag }}
-            ghcr.io/${{ github.repository }}/web:${{ inputs.image-tag }}-${{ github.sha }}
+            ghcr.io/${{ env.REPO }}/web:${{ inputs.image-tag }}
+            ghcr.io/${{ env.REPO }}/web:${{ inputs.image-tag }}-${{ github.sha }}
 
       # TODO: cuando el servidor (VM de Oracle) este listo, agregar aca un step
       # que se conecte por SSH y corra `docker compose pull && docker compose up -d`
