@@ -1,4 +1,4 @@
-export type EstadoTarea = 'PENDIENTE' | 'HECHA';
+type EstadoTarea = 'PENDIENTE' | 'HECHA';
 
 export interface Tarea {
   id: number;
