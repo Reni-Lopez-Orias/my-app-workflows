@@ -45,14 +45,16 @@ jobs:
         run: npx prisma generate                   # 4. Prisma necesita esto antes de compilar
       - name: Lint
         run: npm run lint:ci                       # 5. falla si hay problemas, no los "arregla"
+      - name: Knip (archivos/exports/dependencias sin usar)
+        run: npm run knip                          # 6. falla si hay codigo muerto
       - name: Compilar
-        run: npm run build                         # 6. compilar TypeScript
+        run: npm run build                         # 7. compilar TypeScript
       - name: Ejecutar tests unitarios
-        run: npm test                              # 7. Jest: TareasService + DTOs, todo mockeado
+        run: npm test                              # 8. Jest: TareasService + DTOs, todo mockeado
       - name: Migrar la base de test
-        run: npx prisma migrate deploy              # 8. aplica las migraciones contra el Postgres del "services"
+        run: npx prisma migrate deploy              # 9. aplica las migraciones contra el Postgres del "services"
       - name: Ejecutar tests e2e
-        run: npm run test:e2e                       # 9. CRUD completo por HTTP contra ese Postgres real
+        run: npm run test:e2e                       # 10. CRUD completo por HTTP contra ese Postgres real
 
   frontend:
     runs-on: ubuntu-latest
@@ -68,6 +70,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint --if-present
+      - name: Knip (archivos/exports/dependencias sin usar)
+        run: npm run knip
       - name: Ejecutar tests
         run: npm run test --if-present
       - run: npm run build
