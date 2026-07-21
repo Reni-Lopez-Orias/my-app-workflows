@@ -12,6 +12,26 @@ jobs:
     defaults:
       run:
         working-directory: backend    # todos los "run:" de este job parten desde /backend
+    # "services" levanta un contenedor aparte que vive solo durante este job.
+    # Como el job NO corre dentro de un contenedor (usa el runner directo),
+    # se accede a este Postgres via "localhost", igual que a cualquier otro
+    # servicio publicado con -p en la máquina.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mi_proyecto_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mi_proyecto_test?schema=public
     steps:
       - uses: actions/checkout@v4                 # 1. traer tu código al runner
       - uses: actions/setup-node@v4                # 2. instalar Node en el runner
@@ -23,10 +43,16 @@ jobs:
         run: npm ci                                # 3. instalar exactamente lo del lockfile
       - name: Generar cliente de Prisma
         run: npx prisma generate                   # 4. Prisma necesita esto antes de compilar
+      - name: Lint
+        run: npm run lint:ci                       # 5. falla si hay problemas, no los "arregla"
       - name: Compilar
-        run: npm run build                         # 5. compilar TypeScript
-      - name: Ejecutar tests
-        run: npm test                              # 6. correr Jest (unitarios)
+        run: npm run build                         # 6. compilar TypeScript
+      - name: Ejecutar tests unitarios
+        run: npm test                              # 7. Jest: TareasService + DTOs, todo mockeado
+      - name: Migrar la base de test
+        run: npx prisma migrate deploy              # 8. aplica las migraciones contra el Postgres del "services"
+      - name: Ejecutar tests e2e
+        run: npm run test:e2e                       # 9. CRUD completo por HTTP contra ese Postgres real
 
   frontend:
     runs-on: ubuntu-latest
@@ -42,6 +68,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint --if-present
+      - name: Ejecutar tests
+        run: npm run test --if-present
       - run: npm run build
       - name: Guardar artefacto del build
         uses: actions/upload-artifact@v4

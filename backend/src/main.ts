@@ -9,10 +9,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173',
+    origin:
+      configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173',
   });
 
   const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
 }
-bootstrap();
+void bootstrap();
