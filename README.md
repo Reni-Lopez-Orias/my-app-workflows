@@ -96,3 +96,4 @@ valor cambia según cómo lo corras.
 
 GitHub Flow: ramas `feat/...` mergeadas a `main`. Los PRs se suman cuando el repo tenga remoto.
 prueba de proteccion
+prueba
