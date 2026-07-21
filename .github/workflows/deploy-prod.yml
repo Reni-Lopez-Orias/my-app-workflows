@@ -6,6 +6,9 @@ on:
 
 jobs:
   deploy:
+    permissions:
+      contents: read
+      packages: write   # sin esto, el reusable no puede pedir mas de lo que YO tengo
     uses: ./.github/workflows/deploy-reusable.yml
     with:
       environment: prod
