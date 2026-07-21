@@ -33,8 +33,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mi_proyecto_test?schema=public
     steps:
-      - uses: actions/checkout@v4                 # 1. traer tu código al runner
-      - uses: actions/setup-node@v4                # 2. instalar Node en el runner
+      - uses: actions/checkout@v5                 # 1. traer tu código al runner
+      - uses: actions/setup-node@v6                # 2. instalar Node en el runner
         with:
           node-version: '20'
           cache: 'npm'
@@ -60,8 +60,8 @@ jobs:
       run:
         working-directory: frontend    # todos los "run:" de este job parten desde /frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
